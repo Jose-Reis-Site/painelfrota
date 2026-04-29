@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Escala de Frota</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #3b82f6;
+            --bg: #f8fafc;
+            --text: #0f172a;
+            --white: #ffffff;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 10px;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 20px 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        header h1 { margin: 0; font-size: 1.4rem; }
+        .data-header { font-size: 1rem; margin-top: 8px; font-weight: bold; color: #fbbf24; }
+
+        .controls {
+            background: var(--white);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        #searchInput {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px; /* Evita zoom automático no iOS */
+        }
+        .refresh-btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Estilo para Tabela Responsiva (Cards no Celular) */
+        .table-container { overflow-x: auto; }
+        
+        table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: 12px; overflow: hidden; }
+        th { background: #f1f5f9; padding: 12px 10px; text-align: left; font-size: 0.75rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; display: inline-block; }
+        .status-rodando { background: #dcfce7; color: #166534; }
+        .status-recolhe { background: #fee2e2; color: #991b1b; }
+
+        .loading { text-align: center; padding: 20px; font-weight: bold; color: var(--primary); }
+
+        @media (max-width: 600px) {
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+            tr { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 10px; padding: 10px; background: white; }
+            td { border: none; position: relative; padding-left: 40%; text-align: right; border-bottom: 1px solid #f8fafc; }
+            td:last-child { border-bottom: none; }
+            td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 10px;
+                width: 35%;
+                white-space: nowrap;
+                text-align: left;
+                font-weight: bold;
+                color: #64748b;
+            }
+            header h1 { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Consulta de Escala de Frota</h1>
+        <div class="data-header"><span id="data-display">Carregando dados...</span></div>
+    </header>
+
+    <div class="controls">
+        <input type="text" id="searchInput" placeholder="Buscar Linha ou Carro...">
+        <button class="refresh-btn" onclick="fetchData()">Atualizar Dados</button>
+    </div>
+
+    <div id="loading" class="loading" style="display:none;">Atualizando escala...</div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>TRIP</th>
+                    <th>INÍCIO</th>
+                    <th>LINHA</th>
+                    <th>HORA REC.</th>
+                    <th>RECOLHE</th>
+                    <th>CARRO</th>
+                    <th>Mts</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRbp1H_Rv3xrJcbvO07AORYgY3FCs6g6Vah4yQNRJ6P7OmJPcwjUZCxcU4dwrkDu-ZzZi2hoWif8es-/pub?gid=564700378&single=true&output=csv';
+    const tableBody = document.getElementById('tableBody');
+    const dataDisplay = document.getElementById('data-display');
+    const searchInput = document.getElementById('searchInput');
+    const loadingDiv = document.getElementById('loading');
+
+    let currentData = [];
+
+    async function fetchData() {
+        loadingDiv.style.display = 'block';
+        try {
+            // Usando um proxy ou fetch direto (Google Sheets permite fetch público)
+            // Adicionamos um timestamp para evitar cache do navegador
+            const response = await fetch(csvUrl + '&t=' + new Date().getTime());
+            const csvText = await response.text();
+            processData(csvText);
+        } catch (error) {
+            console.error('Erro ao buscar dados:', error);
+            dataDisplay.innerText = "Erro ao carregar dados online";
+        } finally {
+            loadingDiv.style.display = 'none';
+        }
+    }
+
+    function processData(csvText) {
+        const lines = csvText.split(/\r?\n/);
+        const newData = [];
+        let dataEncontrada = "Não identificada";
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            
+            // Lógica da DATA
+            if (line.includes("DIAS UTEIS")) {
+                const partes = line.split(',');
+                for (let cell of partes) {
+                    if (cell.includes("DIAS UTEIS")) {
+                        dataEncontrada = cell.replace('DIAS UTEIS-', '').trim();
+                        break;
+                    }
+                }
+            }
+
+            // Lógica dos DADOS (Colunas 1, 2, 3, 5, 7, 8, 9 -> índices 0,1,2,4,6,7,8)
+            const cols = line.split(',');
+            if (cols.length >= 9 && cols[0].trim() !== "" && !cols[0].includes("TRIP") && i > 10) {
+                if (cols[0].match(/\d/)) { 
+                    newData.push({
+                        trip: cols[0].trim(),
+                        h_ini: cols[1].trim(),
+                        linhas: cols[2].trim(),
+                        hora_rec: cols[4].trim(),
+                        recolhe: cols[6].trim(),
+                        carro: cols[7].trim(),
+                        mts: cols[8].trim()
+                    });
+                }
+            }
+        }
+        
+        dataDisplay.innerText = "Escala de: " + dataEncontrada;
+        currentData = newData;
+        renderTable(currentData);
+    }
+
+    function renderTable(data) {
+        tableBody.innerHTML = '';
+        data.forEach(item => {
+            const row = document.createElement('tr');
+            const isRodando = item.hora_rec.toLowerCase().includes('rodando');
+            
+            row.innerHTML = `
+                <td data-label="TRIP">${item.trip}</td>
+                <td data-label="INÍCIO">${item.h_ini}</td>
+                <td data-label="LINHA"><strong>${item.linhas}</strong></td>
+                <td data-label="HORA REC."><span class="badge ${isRodando ? 'status-rodando' : 'status-recolhe'}">${item.hora_rec}</span></td>
+                <td data-label="RECOLHE">${item.recolhe}</td>
+                <td data-label="CARRO" style="font-weight:bold">${item.carro}</td>
+                <td data-label="Mts">${item.mts}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const filtered = currentData.filter(item => 
+            item.linhas.toLowerCase().includes(term) || 
+            item.carro.toLowerCase().includes(term)
+        );
+        renderTable(filtered);
+    });
+
+    // Carrega os dados ao abrir a página
+    fetchData();
+    // Atualiza automaticamente a cada 5 minutos
+    setInterval(fetchData, 300000);
+
+</script>
+</body>
+</html>
