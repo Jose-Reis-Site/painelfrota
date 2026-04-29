@@ -3,98 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta de Escala de Frota</title>
+    <title>Escala de Frota - TCCC</title>
     <style>
         :root {
             --primary: #1e3a8a;
-            --secondary: #3b82f6;
             --bg: #f8fafc;
             --text: #0f172a;
             --white: #ffffff;
         }
         * { box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, system-ui, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 10px;
-            line-height: 1.5;
+            padding: 8px;
         }
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-        }
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; }
+        
         header {
             background: var(--primary);
             color: white;
-            padding: 20px 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
             text-align: center;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
-        header h1 { margin: 0; font-size: 1.4rem; }
-        .data-header { font-size: 1rem; margin-top: 8px; font-weight: bold; color: #fbbf24; }
+        header h1 { margin: 0; font-size: 1.1rem; }
+        .data-header { font-size: 0.9rem; font-weight: bold; color: #fbbf24; margin-top: 4px; }
 
         .controls {
-            background: var(--white);
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
             display: flex;
-            flex-direction: column;
-            gap: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            gap: 8px;
+            margin-bottom: 10px;
         }
         #searchInput {
-            width: 100%;
-            padding: 12px;
+            flex-grow: 1;
+            padding: 10px;
             border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 16px; /* Evita zoom automático no iOS */
+            border-radius: 6px;
+            font-size: 14px;
         }
         .refresh-btn {
-            background: var(--secondary);
+            background: #3b82f6;
             color: white;
             border: none;
-            padding: 12px;
-            border-radius: 8px;
+            padding: 0 15px;
+            border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
         }
 
-        /* Estilo para Tabela Responsiva (Cards no Celular) */
-        .table-container { overflow-x: auto; }
+        /* TABELA SEMPRE HORIZONTAL */
+        .table-container {
+            width: 100%;
+            overflow-x: auto; /* Permite rolar pro lado se for muito pequeno */
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
         
-        table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: 12px; overflow: hidden; }
-        th { background: #f1f5f9; padding: 12px 10px; text-align: left; font-size: 0.75rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 500px; /* Garante que não esmague demais no celular */
+        }
+        
+        th {
+            background: #f1f5f9;
+            padding: 8px 4px;
+            text-align: left;
+            font-size: 0.65rem; /* Fonte pequena para caber tudo */
+            text-transform: uppercase;
+            border-bottom: 2px solid #e2e8f0;
+            color: #64748b;
+        }
+        
+        td {
+            padding: 8px 4px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.8rem; /* Fonte legível no celular */
+            white-space: nowrap; /* Impede que o texto pule linha */
+        }
 
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; display: inline-block; }
+        .badge {
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: bold;
+        }
         .status-rodando { background: #dcfce7; color: #166534; }
         .status-recolhe { background: #fee2e2; color: #991b1b; }
 
-        .loading { text-align: center; padding: 20px; font-weight: bold; color: var(--primary); }
-
-        @media (max-width: 600px) {
-            table, thead, tbody, th, td, tr { display: block; }
-            thead tr { position: absolute; top: -9999px; left: -9999px; }
-            tr { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 10px; padding: 10px; background: white; }
-            td { border: none; position: relative; padding-left: 40%; text-align: right; border-bottom: 1px solid #f8fafc; }
-            td:last-child { border-bottom: none; }
-            td::before {
-                content: attr(data-label);
-                position: absolute;
-                left: 10px;
-                width: 35%;
-                white-space: nowrap;
-                text-align: left;
-                font-weight: bold;
-                color: #64748b;
-            }
-            header h1 { font-size: 1.2rem; }
-        }
+        .loading { text-align: center; padding: 10px; font-size: 0.8rem; color: var(--primary); }
     </style>
 </head>
 <body>
@@ -102,25 +103,25 @@
 <div class="container">
     <header>
         <h1>Consulta de Escala de Frota</h1>
-        <div class="data-header"><span id="data-display">Carregando dados...</span></div>
+        <div class="data-header"><span id="data-display">Carregando...</span></div>
     </header>
 
     <div class="controls">
         <input type="text" id="searchInput" placeholder="Buscar Linha ou Carro...">
-        <button class="refresh-btn" onclick="fetchData()">Atualizar Dados</button>
+        <button class="refresh-btn" onclick="fetchData()">↻</button>
     </div>
 
-    <div id="loading" class="loading" style="display:none;">Atualizando escala...</div>
+    <div id="loading" class="loading" style="display:none;">Atualizando...</div>
 
     <div class="table-container">
         <table>
             <thead>
                 <tr>
                     <th>TRIP</th>
-                    <th>INÍCIO</th>
+                    <th>INI</th>
                     <th>LINHA</th>
-                    <th>HORA REC.</th>
-                    <th>RECOLHE</th>
+                    <th>REC</th>
+                    <th>LOCAL</th>
                     <th>CARRO</th>
                     <th>Mts</th>
                 </tr>
@@ -142,14 +143,11 @@
     async function fetchData() {
         loadingDiv.style.display = 'block';
         try {
-            // Usando um proxy ou fetch direto (Google Sheets permite fetch público)
-            // Adicionamos um timestamp para evitar cache do navegador
             const response = await fetch(csvUrl + '&t=' + new Date().getTime());
             const csvText = await response.text();
             processData(csvText);
         } catch (error) {
-            console.error('Erro ao buscar dados:', error);
-            dataDisplay.innerText = "Erro ao carregar dados online";
+            dataDisplay.innerText = "Erro ao carregar dados";
         } finally {
             loadingDiv.style.display = 'none';
         }
@@ -158,12 +156,11 @@
     function processData(csvText) {
         const lines = csvText.split(/\r?\n/);
         const newData = [];
-        let dataEncontrada = "Não identificada";
+        let dataEncontrada = "";
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             
-            // Lógica da DATA
             if (line.includes("DIAS UTEIS")) {
                 const partes = line.split(',');
                 for (let cell of partes) {
@@ -174,7 +171,6 @@
                 }
             }
 
-            // Lógica dos DADOS (Colunas 1, 2, 3, 5, 7, 8, 9 -> índices 0,1,2,4,6,7,8)
             const cols = line.split(',');
             if (cols.length >= 9 && cols[0].trim() !== "" && !cols[0].includes("TRIP") && i > 10) {
                 if (cols[0].match(/\d/)) { 
@@ -191,7 +187,7 @@
             }
         }
         
-        dataDisplay.innerText = "Escala de: " + dataEncontrada;
+        dataDisplay.innerText = "Escala: " + dataEncontrada;
         currentData = newData;
         renderTable(currentData);
     }
@@ -202,14 +198,18 @@
             const row = document.createElement('tr');
             const isRodando = item.hora_rec.toLowerCase().includes('rodando');
             
+            // Abreviei os textos longos para caber na horizontal
+            let statusDisplay = item.hora_rec;
+            if (isRodando) statusDisplay = "ROD.";
+            
             row.innerHTML = `
-                <td data-label="TRIP">${item.trip}</td>
-                <td data-label="INÍCIO">${item.h_ini}</td>
-                <td data-label="LINHA"><strong>${item.linhas}</strong></td>
-                <td data-label="HORA REC."><span class="badge ${isRodando ? 'status-rodando' : 'status-recolhe'}">${item.hora_rec}</span></td>
-                <td data-label="RECOLHE">${item.recolhe}</td>
-                <td data-label="CARRO" style="font-weight:bold">${item.carro}</td>
-                <td data-label="Mts">${item.mts}</td>
+                <td>${item.trip}</td>
+                <td>${item.h_ini}</td>
+                <td><strong>${item.linhas}</strong></td>
+                <td><span class="badge ${isRodando ? 'status-rodando' : 'status-recolhe'}">${statusDisplay} ${!isRodando ? item.hora_rec : ''}</span></td>
+                <td>${item.recolhe}</td>
+                <td style="font-weight:bold">${item.carro}</td>
+                <td>${item.mts}</td>
             `;
             tableBody.appendChild(row);
         });
@@ -224,11 +224,7 @@
         renderTable(filtered);
     });
 
-    // Carrega os dados ao abrir a página
     fetchData();
-    // Atualiza automaticamente a cada 5 minutos
-    setInterval(fetchData, 300000);
-
 </script>
 </body>
 </html>
