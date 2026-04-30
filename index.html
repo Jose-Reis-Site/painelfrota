@@ -7,46 +7,66 @@
     <style>
         :root { --primary: #1e3a8a; --bg: #f8fafc; --text: #0f172a; --white: #ffffff; }
         * { box-sizing: border-box; }
-        body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 8px; }
+        body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 5px; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; }
-        header { background: var(--primary); color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
-        header h1 { margin: 0; font-size: 1.1rem; }
-        .data-header { font-size: 0.9rem; font-weight: bold; color: #fbbf24; margin-top: 4px; }
-        .controls { display: flex; gap: 8px; margin-bottom: 10px; }
-        #searchInput { flex-grow: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; }
-        .refresh-btn { background: #3b82f6; color: white; border: none; padding: 0 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        
+        header { background: var(--primary); color: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; text-align: center; }
+        header h1 { margin: 0; font-size: 1rem; }
+        .data-header { font-size: 0.85rem; font-weight: bold; color: #fbbf24; margin-top: 2px; }
+
+        .controls { display: flex; gap: 5px; margin-bottom: 8px; }
+        #searchInput { flex-grow: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; }
+        .refresh-btn { background: #3b82f6; color: white; border: none; padding: 0 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
         .table-container { width: 100%; overflow-x: auto; background: var(--white); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; min-width: 500px; }
-        th { background: #f1f5f9; padding: 8px 4px; text-align: left; font-size: 0.65rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; color: #64748b; }
-        td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem; white-space: nowrap; }
-        .badge { padding: 2px 5px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; }
+        
+        table { width: 100%; border-collapse: collapse; min-width: 480px; table-layout: fixed; }
+        
+        th { background: #f1f5f9; padding: 8px 3px; text-align: left; font-size: 0.6rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; color: #64748b; }
+        td { padding: 8px 3px; border-bottom: 1px solid #f1f5f9; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Larguras fixas para evitar que as colunas grudem */
+        .col-trip { width: 12%; }
+        .col-ini { width: 12%; }
+        .col-linha { width: 15%; }
+        .col-rec { width: 18%; }
+        .col-local { width: 18%; }
+        .col-carro { width: 15%; }
+        .col-mts { width: 10%; }
+
+        .badge { padding: 2px 4px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; }
         .status-rodando { background: #dcfce7; color: #166534; }
         .status-recolhe { background: #fee2e2; color: #991b1b; }
+        
         .loading { text-align: center; padding: 10px; font-size: 0.8rem; color: var(--primary); }
     </style>
 </head>
 <body>
+
 <div class="container">
     <header>
         <h1>Consulta de Escala de Frota</h1>
         <div class="data-header"><span id="data-display">Carregando...</span></div>
     </header>
+
     <div class="controls">
-        <input type="text" id="searchInput" placeholder="Buscar Linha ou Carro...">
+        <input type="text" id="searchInput" placeholder="Linha ou Carro...">
         <button class="refresh-btn" onclick="fetchData()">↻</button>
     </div>
-    <div id="loading" class="loading" style="display:none;">Atualizando...</div>
+
+    <div id="loading" class="loading" style="display:none;">Buscando dados...</div>
+
     <div class="table-container">
         <table>
             <thead>
                 <tr>
-                    <th>TRIP</th>
-                    <th>INI</th>
-                    <th>LINHA</th>
-                    <th>REC</th>
-                    <th>LOCAL</th>
-                    <th>CARRO</th>
-                    <th>Mts</th>
+                    <th class="col-trip">TRIP</th>
+                    <th class="col-ini">INI</th>
+                    <th class="col-linha">LINHA</th>
+                    <th class="col-rec">REC</th>
+                    <th class="col-local">LOCAL</th>
+                    <th class="col-carro">CARRO</th>
+                    <th class="col-mts">Mts</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -65,7 +85,7 @@
             const csvText = await response.text();
             processData(csvText);
         } catch (error) {
-            document.getElementById('data-display').innerText = "Erro ao carregar dados";
+            document.getElementById('data-display').innerText = "Erro na conexão";
         } finally {
             document.getElementById('loading').style.display = 'none';
         }
@@ -74,12 +94,13 @@
     function processData(csvText) {
         const lines = csvText.split(/\r?\n/);
         const newData = [];
-        let dataEncontrada = "";
+        let dataEncontrada = "---";
 
-        lines.forEach((line, index) => {
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
             const cols = line.split(',');
-            
-            // 1. Captura a Data (procura em qualquer coluna da linha que contém DIAS UTEIS)
+
+            // 1. Pega a Data
             if (line.includes("DIAS UTEIS")) {
                 cols.forEach(cell => {
                     if (cell.includes("DIAS UTEIS")) {
@@ -88,25 +109,26 @@
                 });
             }
 
-            // 2. Captura os Dados
-            // Valida: tem colunas suficientes E a primeira coluna NÃO é vazia/data/cabeçalho E tem número
-            if (cols.length >= 9) {
+            // 2. Pega os Dados (PULA AS PRIMEIRAS 13 LINHAS DE CABEÇALHO)
+            if (i > 13 && cols.length >= 8) {
                 const tripVal = cols[0].trim();
-                if (tripVal !== "" && !tripVal.includes("DIAS UTEIS") && !tripVal.includes("TRIP") && /\d/.test(tripVal)) {
+                
+                // Valida se a linha realmente é uma TRIP (começa com número)
+                if (tripVal !== "" && /\d/.test(tripVal) && !tripVal.includes("Quantidade")) {
                     newData.push({
                         trip: tripVal,
-                        h_ini: cols[1].trim(),
-                        linhas: cols[2].trim(),
-                        hora_rec: cols[4].trim(),
-                        recolhe: cols[6].trim(),
-                        carro: cols[7].trim(),
-                        mts: cols[8].trim()
+                        h_ini: cols[1] ? cols[1].trim() : "",
+                        linhas: cols[2] ? cols[2].trim() : "",
+                        hora_rec: cols[4] ? cols[4].trim() : "",
+                        recolhe: cols[6] ? cols[6].trim() : "",
+                        carro: cols[7] ? cols[7].trim() : "",
+                        mts: cols[8] ? cols[8].trim() : ""
                     });
                 }
             }
-        });
+        }
         
-        document.getElementById('data-display').innerText = "Escala: " + dataEncontrada;
+        document.getElementById('data-display').innerText = "Escala de: " + dataEncontrada;
         currentData = newData;
         renderTable(currentData);
     }
@@ -114,21 +136,20 @@
     function renderTable(data) {
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
+        
         data.forEach(item => {
             const row = document.createElement('tr');
             const isRodando = item.hora_rec.toLowerCase().includes('rodando');
-            
-            // Se for "Rodando", mostra apenas ROD. Se for horário, mostra o horário uma vez só
             const displayHora = isRodando ? "ROD." : item.hora_rec;
 
             row.innerHTML = `
-                <td>${item.trip}</td>
-                <td>${item.h_ini}</td>
-                <td><strong>${item.linhas}</strong></td>
-                <td><span class="badge ${isRodando ? 'status-rodando' : 'status-recolhe'}">${displayHora}</span></td>
-                <td>${item.recolhe}</td>
-                <td style="font-weight:bold">${item.carro}</td>
-                <td>${item.mts}</td>
+                <td class="col-trip">${item.trip}</td>
+                <td class="col-ini">${item.h_ini}</td>
+                <td class="col-linha"><strong>${item.linhas}</strong></td>
+                <td class="col-rec"><span class="badge ${isRodando ? 'status-rodando' : 'status-recolhe'}">${displayHora}</span></td>
+                <td class="col-local">${item.recolhe}</td>
+                <td class="col-carro" style="font-weight:bold">${item.carro}</td>
+                <td class="col-mts">${item.mts}</td>
             `;
             tableBody.appendChild(row);
         });
