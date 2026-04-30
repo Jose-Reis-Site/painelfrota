@@ -5,114 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escala de Frota - TCCC</title>
     <style>
-        :root {
-            --primary: #1e3a8a;
-            --bg: #f8fafc;
-            --text: #0f172a;
-            --white: #ffffff;
-        }
+        :root { --primary: #1e3a8a; --bg: #f8fafc; --text: #0f172a; --white: #ffffff; }
         * { box-sizing: border-box; }
-        body {
-            font-family: -apple-system, system-ui, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 8px;
-        }
+        body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 8px; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; }
-        
-        header {
-            background: var(--primary);
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
+        header { background: var(--primary); color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
         header h1 { margin: 0; font-size: 1.1rem; }
         .data-header { font-size: 0.9rem; font-weight: bold; color: #fbbf24; margin-top: 4px; }
-
-        .controls {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        #searchInput {
-            flex-grow: 1;
-            padding: 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        .refresh-btn {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 0 15px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        /* TABELA SEMPRE HORIZONTAL */
-        .table-container {
-            width: 100%;
-            overflow-x: auto; /* Permite rolar pro lado se for muito pequeno */
-            background: var(--white);
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 500px; /* Garante que não esmague demais no celular */
-        }
-        
-        th {
-            background: #f1f5f9;
-            padding: 8px 4px;
-            text-align: left;
-            font-size: 0.65rem; /* Fonte pequena para caber tudo */
-            text-transform: uppercase;
-            border-bottom: 2px solid #e2e8f0;
-            color: #64748b;
-        }
-        
-        td {
-            padding: 8px 4px;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 0.8rem; /* Fonte legível no celular */
-            white-space: nowrap; /* Impede que o texto pule linha */
-        }
-
-        .badge {
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-size: 0.65rem;
-            font-weight: bold;
-        }
+        .controls { display: flex; gap: 8px; margin-bottom: 10px; }
+        #searchInput { flex-grow: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; }
+        .refresh-btn { background: #3b82f6; color: white; border: none; padding: 0 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .table-container { width: 100%; overflow-x: auto; background: var(--white); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        th { background: #f1f5f9; padding: 8px 4px; text-align: left; font-size: 0.65rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; color: #64748b; }
+        td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem; white-space: nowrap; }
+        .badge { padding: 2px 5px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; }
         .status-rodando { background: #dcfce7; color: #166534; }
         .status-recolhe { background: #fee2e2; color: #991b1b; }
-
         .loading { text-align: center; padding: 10px; font-size: 0.8rem; color: var(--primary); }
     </style>
 </head>
 <body>
-
 <div class="container">
     <header>
         <h1>Consulta de Escala de Frota</h1>
         <div class="data-header"><span id="data-display">Carregando...</span></div>
     </header>
-
     <div class="controls">
         <input type="text" id="searchInput" placeholder="Buscar Linha ou Carro...">
         <button class="refresh-btn" onclick="fetchData()">↻</button>
     </div>
-
     <div id="loading" class="loading" style="display:none;">Atualizando...</div>
-
     <div class="table-container">
         <table>
             <thead>
@@ -133,23 +56,18 @@
 
 <script>
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRbp1H_Rv3xrJcbvO07AORYgY3FCs6g6Vah4yQNRJ6P7OmJPcwjUZCxcU4dwrkDu-ZzZi2hoWif8es-/pub?gid=564700378&single=true&output=csv';
-    const tableBody = document.getElementById('tableBody');
-    const dataDisplay = document.getElementById('data-display');
-    const searchInput = document.getElementById('searchInput');
-    const loadingDiv = document.getElementById('loading');
-
     let currentData = [];
 
     async function fetchData() {
-        loadingDiv.style.display = 'block';
+        document.getElementById('loading').style.display = 'block';
         try {
             const response = await fetch(csvUrl + '&t=' + new Date().getTime());
             const csvText = await response.text();
             processData(csvText);
         } catch (error) {
-            dataDisplay.innerText = "Erro ao carregar dados";
+            document.getElementById('data-display').innerText = "Erro ao carregar dados";
         } finally {
-            loadingDiv.style.display = 'none';
+            document.getElementById('loading').style.display = 'none';
         }
     }
 
@@ -158,24 +76,25 @@
         const newData = [];
         let dataEncontrada = "";
 
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
+        lines.forEach((line, index) => {
+            const cols = line.split(',');
             
+            // 1. Captura a Data (procura em qualquer coluna da linha que contém DIAS UTEIS)
             if (line.includes("DIAS UTEIS")) {
-                const partes = line.split(',');
-                for (let cell of partes) {
+                cols.forEach(cell => {
                     if (cell.includes("DIAS UTEIS")) {
                         dataEncontrada = cell.replace('DIAS UTEIS-', '').trim();
-                        break;
                     }
-                }
+                });
             }
 
-            const cols = line.split(',');
-            if (cols.length >= 9 && cols[0].trim() !== "" && !cols[0].includes("TRIP") && i > 10) {
-                if (cols[0].match(/\d/)) { 
+            // 2. Captura os Dados
+            // Valida: tem colunas suficientes E a primeira coluna NÃO é vazia/data/cabeçalho E tem número
+            if (cols.length >= 9) {
+                const tripVal = cols[0].trim();
+                if (tripVal !== "" && !tripVal.includes("DIAS UTEIS") && !tripVal.includes("TRIP") && /\d/.test(tripVal)) {
                     newData.push({
-                        trip: cols[0].trim(),
+                        trip: tripVal,
                         h_ini: cols[1].trim(),
                         linhas: cols[2].trim(),
                         hora_rec: cols[4].trim(),
@@ -185,28 +104,28 @@
                     });
                 }
             }
-        }
+        });
         
-        dataDisplay.innerText = "Escala: " + dataEncontrada;
+        document.getElementById('data-display').innerText = "Escala: " + dataEncontrada;
         currentData = newData;
         renderTable(currentData);
     }
 
     function renderTable(data) {
+        const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
         data.forEach(item => {
             const row = document.createElement('tr');
             const isRodando = item.hora_rec.toLowerCase().includes('rodando');
             
-            // Abreviei os textos longos para caber na horizontal
-            let statusDisplay = item.hora_rec;
-            if (isRodando) statusDisplay = "ROD.";
-            
+            // Se for "Rodando", mostra apenas ROD. Se for horário, mostra o horário uma vez só
+            const displayHora = isRodando ? "ROD." : item.hora_rec;
+
             row.innerHTML = `
                 <td>${item.trip}</td>
                 <td>${item.h_ini}</td>
                 <td><strong>${item.linhas}</strong></td>
-                <td><span class="badge ${isRodando ? 'status-rodando' : 'status-recolhe'}">${statusDisplay} ${!isRodando ? item.hora_rec : ''}</span></td>
+                <td><span class="badge ${isRodando ? 'status-rodando' : 'status-recolhe'}">${displayHora}</span></td>
                 <td>${item.recolhe}</td>
                 <td style="font-weight:bold">${item.carro}</td>
                 <td>${item.mts}</td>
@@ -215,11 +134,12 @@
         });
     }
 
-    searchInput.addEventListener('input', (e) => {
+    document.getElementById('searchInput').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
         const filtered = currentData.filter(item => 
             item.linhas.toLowerCase().includes(term) || 
-            item.carro.toLowerCase().includes(term)
+            item.carro.toLowerCase().includes(term) ||
+            item.trip.toLowerCase().includes(term)
         );
         renderTable(filtered);
     });
